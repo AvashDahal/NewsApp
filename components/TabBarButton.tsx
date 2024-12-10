@@ -1,43 +1,39 @@
-import { Pressable, StyleSheet } from "react-native";
 import React, { useEffect } from "react";
-import { icon } from "@/constants/Icons";
-import Animated, {
-  interpolate,
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-} from "react-native-reanimated";
+import { Pressable, StyleSheet } from "react-native";
 import { Colors } from "@/constants/Colors";
+import { icon } from "@/constants/Icons";
+import Animated, { useAnimatedStyle, useSharedValue, withSpring, interpolate } from "react-native-reanimated";
 
-const TabBarButton = ({
+interface TabBarButtonProps {
+  onPress: () => void;
+  onLongPress: () => void;
+  isFocused: boolean;
+  routeName: keyof typeof icon; // Ensure it's a valid key in `icon`
+  label: string;
+}
+
+const TabBarButton: React.FC<TabBarButtonProps> = ({
   onPress,
   onLongPress,
   isFocused,
   routeName,
   label,
-}: {
-  onPress: Function;
-  onLongPress: Function;
-  isFocused: boolean;
-  routeName: string;
-  label: string;
 }) => {
   const opacity = useSharedValue(0);
 
   useEffect(() => {
-    opacity.value = withSpring(
-      typeof isFocused === "boolean" ? (isFocused ? 1 : 0) : isFocused,
-      { duration: 50 }
-    );
-  }, [opacity, isFocused]);
+    opacity.value = withSpring(isFocused ? 1 : 0, { duration: 50 });
+  }, [isFocused]);
 
   const animatedTextStyle = useAnimatedStyle(() => {
     const opacityValue = interpolate(opacity.value, [0, 1], [1, 0]);
-
     return {
       opacity: opacityValue,
     };
   });
+
+  // Render the icon dynamically based on routeName
+  const renderIcon = icon[routeName] || icon.default;
 
   return (
     <Pressable
@@ -45,10 +41,11 @@ const TabBarButton = ({
       onLongPress={onLongPress}
       style={styles.tabbarBtn}
     >
-      {icon[routeName]({
+      {renderIcon({
         color: isFocused ? Colors.tabIconSelected : Colors.tabIconDefault,
         focused: isFocused,
       })}
+
       <Animated.Text
         style={[
           {
@@ -64,8 +61,6 @@ const TabBarButton = ({
   );
 };
 
-export default TabBarButton;
-
 const styles = StyleSheet.create({
   tabbarBtn: {
     flex: 1,
@@ -74,3 +69,5 @@ const styles = StyleSheet.create({
     gap: 5,
   },
 });
+
+export default TabBarButton;

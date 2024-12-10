@@ -1,4 +1,4 @@
-import { View, StyleSheet, LayoutChangeEvent } from "react-native";
+import { View, StyleSheet, LayoutChangeEvent, Dimensions } from "react-native";
 import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import TabBarButton from "@/components/TabBarButton";
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
@@ -6,89 +6,92 @@ import { useState } from "react";
 import { Colors } from "@/constants/Colors";
 
 export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
-  const [dimensions, setDimensions] = useState({ height: 20, width: 100 });
+  const screenWidth = Dimensions.get('window').width
+  const tabWidth = screenWidth / state.routes.length
+  const tabPositionX = useSharedValue(0)
 
-  const buttonWidth = dimensions.width / state.routes.length;
+  const animatedIndicatorStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: tabPositionX.value }]
+  }))
 
-  const onTabbarLayout = (e: LayoutChangeEvent) => {
-    setDimensions({
-      height: e.nativeEvent.layout.height,
-      width: e.nativeEvent.layout.width,
-    });
-  };
-  
-  const tabPositionX = useSharedValue(0);
-
-  const animatedStyle = useAnimatedStyle(() => {
-    return {
-      transform: [{ translateX: tabPositionX.value }],
-    };
-  });
-  
   return (
-    <View onLayout={onTabbarLayout} style={styles.tabbar}>
-      <Animated.View style={[animatedStyle, {
-        position: 'absolute',
-        backgroundColor: Colors.tint,
-        top: 52,
-        left: 34,
-        height: 8,
-        width: 40,
-      }]} />
-      {state.routes.map((route, index) => {
-        const { options } = descriptors[route.key];
-        const label =
-          options.tabBarLabel !== undefined
-            ? options.tabBarLabel
-            : options.title !== undefined
-            ? options.title
-            : route.name;
+    <View style={styles.tabBar}>
+      <Animated.View 
+        style={[
+          styles.activeIndicator, 
+          animatedIndicatorStyle,
+          { width: tabWidth }
+        ]} 
+      />
+     {state.routes.map((route, index) => {
+  const { options } = descriptors[route.key];
+  const label = options.title ?? route.name;
+  const isFocused = state.index === index;
 
-        const isFocused = state.index === index;
+  console.log(`Tab Route: ${route.name}, Focused: ${isFocused}`);
 
-        const onPress = () => {
-          tabPositionX.value = withTiming(buttonWidth * index, {
-            duration: 200,
-          }); 
-          
-          const event = navigation.emit({
-            type: "tabPress",
-            target: route.key,
-            canPreventDefault: true,
-          });
+  const onPress = () => {
+    tabPositionX.value = withTiming(tabWidth * index, { duration: 250 });
 
-          if (!isFocused && !event.defaultPrevented) {
-            navigation.navigate(route.name, route.params);
-          }
-        };
+    const event = navigation.emit({
+      type: "tabPress",
+      target: route.key,
+      canPreventDefault: true,
+    });
 
-        const onLongPress = () => {
-          navigation.emit({
-            type: "tabLongPress",
-            target: route.key,
-          });
-        };
+    if (!isFocused && !event.defaultPrevented) {
+      navigation.navigate(route.name, route.params);
+    }
+  };
 
-        return (
-          <TabBarButton
-            key={route.name}
-            onPress={onPress}
-            onLongPress={onLongPress}
-            isFocused={isFocused}
-            routeName={route.name}
-            label={label}
-          />
-        );
-      })}
-    </View>
+  return (
+    <TabBarButton
+      key={route.name}
+      routeName={route.name}
+      label={label}
+      isFocused={isFocused}
+      onPress={onPress}
+      onLongPress={() =>
+        navigation.emit({
+          type: "tabLongPress",
+          target: route.key,
+        })
+      }
+    />
   );
+})}
+
+    </View>
+  )
 }
 
 const styles = StyleSheet.create({
-  tabbar: {
+  tabBar: {
     flexDirection: 'row',
-    paddingTop: 16,
-    paddingBottom:40,
     backgroundColor: Colors.white,
-  }
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  tabBarButton: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    color:Colors.tabIconDefault,
+  },
+  tabBarLabel: {
+    fontSize: 12,
+  },
+  activeIndicator: {
+    position: 'absolute',
+    height: 3,
+    backgroundColor: Colors.tint,
+    bottom: 0,
+    borderRadius: 2,
+  },
 })
