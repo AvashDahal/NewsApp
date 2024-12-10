@@ -5,9 +5,10 @@ import { StatusBar } from 'expo-status-bar';
 import { Colors } from "@/constants/Colors";
 import { FONT_PATHS } from "@/config";
 import Animated, { FadeInDown, FadeInRight } from "react-native-reanimated";
-
-const Page = () => {
+type Props={}
+const Page = (props:Props) => {
   const router = useRouter();
+  
   
 
   return (
